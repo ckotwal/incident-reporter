@@ -1,6 +1,10 @@
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:timeago/timeago.dart' as timeago;
+
+import '../models/incident_model.dart';
+import '../services/firestore_service.dart';
 
 class IncidentDetailsScreen extends StatelessWidget {
   final String incidentId;
@@ -9,55 +13,77 @@ class IncidentDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final firestoreService = Provider.of<FirestoreService>(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Incident #\$incidentId'),
+        title: const Text('Incident Details'),
       ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('incidents').doc(incidentId).get(),
+      body: StreamBuilder<Incident>(
+        stream: firestoreService.getIncidentById(incidentId),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(child: Text('Something went wrong'));
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
+          final incident = snapshot.data;
+
+          if (incident == null) {
             return const Center(child: Text('Incident not found'));
           }
 
-          final incident = snapshot.data!;
+          final timeAgo = timeago.format(incident.timestamp.toDate());
 
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Incident Details',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Text(incident.title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text('Reported $timeAgo', style: Theme.of(context).textTheme.bodyMedium),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Text('Timestamp: ${incident['timestamp'].toDate()}'),
-                Text('Location: (${incident['latitude']}, ${incident['longitude']})'),
-                const SizedBox(height: 32),
-                Center(
-                  child: Image.network(
-                    incident['imageUrl'],
-                    height: 200,
-                    width: 200,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.error, color: Colors.red, size: 50);
-                    },
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(incident.location, style: Theme.of(context).textTheme.bodyMedium),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (incident.imageUrl != null && incident.imageUrl!.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12.0),
+                    child: Image.network(
+                      incident.imageUrl!,
+                      width: double.infinity,
+                      height: 250,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.broken_image, size: 100, color: Colors.grey);
+                      },
+                    ),
                   ),
-                ),
+                const SizedBox(height: 20),
+                Text('Description', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(incident.description, style: Theme.of(context).textTheme.bodyLarge),
               ],
             ),
           );

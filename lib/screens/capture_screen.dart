@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../models/incident_model.dart';
 import '../services/firestore_service.dart';
@@ -42,6 +43,20 @@ class _CaptureScreenState extends State<CaptureScreen> {
     });
   }
 
+  Future<String> _getAddressFromLatLng(double lat, double lng) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks[0];
+        return "${place.street}, ${place.locality}, ${place.postalCode}, ${place.country}";
+      } else {
+        return "Address not found";
+      }
+    } catch (e) {
+      return "Error getting address";
+    }
+  }
+
   Future<void> _uploadIncident() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
@@ -63,6 +78,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
         final firestoreService = Provider.of<FirestoreService>(context, listen: false);
 
         final position = await locationService.getCurrentPosition();
+        final address = await _getAddressFromLatLng(position.latitude, position.longitude);
         final imageUrl = await storageService.uploadImage(_image!);
 
         final newIncident = Incident(
@@ -71,6 +87,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
           geo: GeoFirePoint(GeoPoint(position.latitude, position.longitude)),
           imageUrl: imageUrl,
           timestamp: Timestamp.now(),
+          address: address,
         );
 
         await firestoreService.addIncident(newIncident);

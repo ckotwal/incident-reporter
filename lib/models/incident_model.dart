@@ -9,6 +9,7 @@ class Incident {
   final GeoFirePoint geo;
   final String? imageUrl;
   final Timestamp timestamp;
+  final String? address;
 
   Incident({
     this.id,
@@ -17,6 +18,7 @@ class Incident {
     required this.geo,
     this.imageUrl,
     required this.timestamp,
+    this.address,
   });
 
   factory Incident.fromFirestore(DocumentSnapshot doc) {
@@ -29,6 +31,7 @@ class Incident {
       geo: GeoFirePoint(geoPoint),
       imageUrl: data['imageUrl'],
       timestamp: data['timestamp'] ?? Timestamp.now(),
+      address: data['address'],
     );
   }
 
@@ -39,8 +42,9 @@ class Incident {
       'geo': geo.data,
       'imageUrl': imageUrl,
       'timestamp': timestamp,
+      'address': address,
     };
   }
 
-  String get location => 'Lat: ${geo.latitude.toStringAsFixed(5)}, Lng: ${geo.longitude.toStringAsFixed(5)}';
+  String get location => address ?? 'Lat: ${geo.latitude.toStringAsFixed(5)}, Lng: ${geo.longitude.toStringAsFixed(5)}';
 }
