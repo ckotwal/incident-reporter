@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "130597667109",
+    "project_id": "wires-489305",
+    "storage_bucket": "wires-489305.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:130597667109:android:3fe459dfb0d96bfb935acc",
+        "android_client_info": {
+          "package_name": "com.arav.incident"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDOwEOPkGKuLPwPDBILKGZKQrl3mU7M8A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
