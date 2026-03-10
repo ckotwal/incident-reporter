@@ -7,10 +7,10 @@ class IncidentListScreen extends StatefulWidget {
   const IncidentListScreen({super.key});
 
   @override
-  _IncidentListScreenState createState() => _IncidentListScreenState();
+  IncidentListScreenState createState() => IncidentListScreenState();
 }
 
-class _IncidentListScreenState extends State<IncidentListScreen> {
+class IncidentListScreenState extends State<IncidentListScreen> {
   @override
   void initState() {
     super.initState();

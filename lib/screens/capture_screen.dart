@@ -1,18 +1,14 @@
-
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+
+import 'package:camera/camera.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:incident_reporter/models/incident.dart';
+import 'package:incident_reporter/services/firestore_service.dart';
+import 'package:incident_reporter/services/location_service.dart';
+import 'package:incident_reporter/services/storage_service.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
-import 'package:geocoding/geocoding.dart';
-
-import '../models/incident_model.dart';
-import '../services/firestore_service.dart';
-import '../services/location_service.dart';
-import '../services/storage_service.dart';
 
 class CaptureScreen extends StatefulWidget {
   const CaptureScreen({super.key});
@@ -22,190 +18,122 @@ class CaptureScreen extends StatefulWidget {
 }
 
 class _CaptureScreenState extends State<CaptureScreen> {
-  final _formKey = GlobalKey<FormState>();
-  XFile? _image;
-  bool _isUploading = false;
-  String _title = '';
-  String _description = '';
+  CameraController? _cameraController;
+  XFile? _imageFile;
 
-  Future<void> _getImage() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 80);
-    if (image != null) {
-      setState(() {
-        _image = image;
-      });
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    final cameras = await availableCameras();
+    final firstCamera = cameras.first;
+    _cameraController = CameraController(firstCamera, ResolutionPreset.medium);
+    await _cameraController!.initialize();
+    if (mounted) {
+      setState(() {});
     }
   }
 
-  void _retakeImage() {
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _takePicture() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+    final image = await _cameraController!.takePicture();
     setState(() {
-      _image = null;
+      _imageFile = image;
     });
   }
 
-  Future<String> _getAddressFromLatLng(double lat, double lng) async {
+  Future<void> _submitIncident() async {
+    if (_imageFile == null) return;
+
+    final locationService = Provider.of<LocationService>(context, listen: false);
+    final storageService = Provider.of<StorageService>(context, listen: false);
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+
     try {
-      final placemarks = await placemarkFromCoordinates(lat, lng);
-      if (placemarks.isNotEmpty) {
-        final place = placemarks[0];
-        return "${place.street}, ${place.locality}, ${place.postalCode}, ${place.country}";
-      } else {
-        return "Address not found";
+      final position = await locationService.getCurrentPosition();
+      final address = await locationService.getAddressFromPosition(position);
+      final imageUrl = await storageService.uploadImage(_imageFile!);
+
+      final newIncident = Incident(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        latitude: position.latitude,
+        longitude: position.longitude,
+        address: address,
+        imageUrl: imageUrl,
+        timestamp: Timestamp.fromDate(DateTime.now()), // Corrected this line
+      );
+
+      await firestoreService.addIncident(newIncident);
+
+      if (mounted) {
+        context.go('/');
       }
     } catch (e) {
-      return "Error getting address";
-    }
-  }
-
-  Future<void> _uploadIncident() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      if (_image == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please take a picture.')),
-        );
-        return;
-      }
-
-      setState(() {
-        _isUploading = true;
-      });
-
-      try {
-        final locationService = Provider.of<LocationService>(context, listen: false);
-        final storageService = Provider.of<StorageService>(context, listen: false);
-        final firestoreService = Provider.of<FirestoreService>(context, listen: false);
-
-        final position = await locationService.getCurrentPosition();
-        final address = await _getAddressFromLatLng(position.latitude, position.longitude);
-        final imageUrl = await storageService.uploadImage(_image!);
-
-        final newIncident = Incident(
-          title: _title,
-          description: _description,
-          geo: GeoFirePoint(GeoPoint(position.latitude, position.longitude)),
-          imageUrl: imageUrl,
-          timestamp: Timestamp.now(),
-          address: address,
-        );
-
-        await firestoreService.addIncident(newIncident);
-
-        if (mounted) {
-          context.go('/');
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to upload incident: $e')),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isUploading = false;
-          });
-        }
-      }
+      // Handle errors appropriately
+      print(e);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Report an Incident'),
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
+      appBar: AppBar(title: const Text('Report Incident')),
+      body: _imageFile == null ? _buildCameraPreview() : _buildImageConfirmation(),
+    );
+  }
+
+  Widget _buildCameraPreview() {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Column(
+      children: [
+        Expanded(
+          child: CameraPreview(_cameraController!),
+        ),
+        Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
+          child: FloatingActionButton(
+            onPressed: _takePicture,
+            child: const Icon(Icons.camera_alt),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageConfirmation() {
+    return Column(
+      children: [
+        Expanded(
+          child: Image.file(File(_imageFile!.path)),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              if (_isUploading)
-                const Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 20),
-                    Text('Uploading Incident...'),
-                  ],
-                )
-              else
-                _buildForm(),
+              FloatingActionButton(
+                onPressed: () => setState(() => _imageFile = null),
+                child: const Icon(Icons.close),
+              ),
+              FloatingActionButton(
+                onPressed: _submitIncident,
+                child: const Icon(Icons.check),
+              ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildForm() {
-    return Column(
-      children: [
-        _image == null
-            ? _buildImagePicker()
-            : _buildImagePreview(),
-        const SizedBox(height: 20),
-        TextFormField(
-          decoration: const InputDecoration(
-            labelText: 'Title',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) => value!.isEmpty ? 'Please enter a title' : null,
-          onSaved: (value) => _title = value!,
-        ),
-        const SizedBox(height: 20),
-        TextFormField(
-          decoration: const InputDecoration(
-            labelText: 'Description',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 3,
-          onSaved: (value) => _description = value!,
-        ),
-        const SizedBox(height: 40),
-        ElevatedButton.icon(
-          onPressed: _uploadIncident,
-          icon: const Icon(Icons.cloud_upload),
-          label: const Text('Submit Report'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            textStyle: const TextStyle(fontSize: 18),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImagePicker() {
-    return Column(
-      children: [
-        const Icon(Icons.camera_enhance_rounded, size: 100, color: Colors.grey),
-        const SizedBox(height: 20),
-        ElevatedButton.icon(
-          onPressed: _getImage,
-          icon: const Icon(Icons.camera_alt),
-          label: const Text('Take Picture'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImagePreview() {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12.0),
-          child: kIsWeb
-              ? Image.network(_image!.path, fit: BoxFit.cover, height: 250)
-              : Image.file(File(_image!.path), fit: BoxFit.cover, height: 250),
-        ),
-        const SizedBox(height: 10),
-        TextButton.icon(
-          onPressed: _retakeImage,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Retake Picture'),
         ),
       ],
     );

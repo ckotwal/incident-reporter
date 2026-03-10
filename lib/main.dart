@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
@@ -18,6 +19,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await FirebaseAppCheck.instance.activate();
   runApp(
     MultiProvider(
       providers: [
@@ -41,7 +43,7 @@ final _router = GoRouter(
       builder: (context, state) => const CaptureScreen(),
     ),
     GoRoute(
-      path: '/incident/:id',
+      path: '/details/:id',
       builder: (context, state) {
         final incidentId = state.pathParameters['id']!;
         return IncidentDetailsScreen(incidentId: incidentId);

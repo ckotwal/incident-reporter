@@ -1,69 +1,41 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
-import '../models/incident_model.dart';
+import 'package:incident_reporter/models/incident.dart';
 
 class FirestoreService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  late final CollectionReference<Incident> _incidentsRef;
+  final FirebaseFirestore _firestore;
 
-  FirestoreService() {
-    _incidentsRef = _db.collection('incidents').withConverter<Incident>(
-          fromFirestore: (snapshot, _) => Incident.fromFirestore(snapshot),
-          toFirestore: (incident, _) => incident.toFirestore(),
-        );
+  FirestoreService({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  late final CollectionReference<Incident> _incidentsRef =
+      _firestore.collection('incidents').withConverter<Incident>(
+            fromFirestore: (snapshot, _) => Incident.fromFirestore(snapshot),
+            toFirestore: (incident, _) => {
+              'imageUrl': incident.imageUrl,
+              'latitude': incident.latitude,
+              'longitude': incident.longitude,
+              'address': incident.address,
+              'timestamp': incident.timestamp,
+            },
+          );
+
+  CollectionReference<Incident> get incidentsRef => _incidentsRef;
+
+  Future<void> addIncident(Incident incident) async {
+    await _incidentsRef.add(incident);
   }
 
-  /// Get a stream of the latest 10 incidents, ordered by timestamp
   Stream<List<Incident>> getIncidents() {
     return _incidentsRef
         .orderBy('timestamp', descending: true)
         .limit(10)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
-  }
-
-  /// Get a stream of incidents within a specific radius of a center point.
-  Stream<List<Incident>> getNearbyIncidents({
-    required GeoPoint center,
-    required double radiusInKm,
-  }) {
-    // Note: Queries on 'geo' field require a composite index in Firestore.
-    // The AI will prompt to create this if it detects a permission error.
-    return GeoCollectionRef<Incident>(_incidentsRef).within(
-      center: GeoFirePoint(center),
-      radius: radiusInKm,
-      field: 'geo',
-      strictMode: true, // Ensures the query is as accurate as possible
-    ).map((docs) => docs.map((doc) => doc.data()).toList());
-  }
-
-  /// Get a single incident by its ID
-  Stream<Incident> getIncidentById(String id) {
-    return _incidentsRef
-        .doc(id)
-        .snapshots()
         .map((snapshot) {
-          final incident = snapshot.data();
-          if (incident == null) {
-            throw Exception('Incident not found!');
-          }
-          return incident;
-        });
+      return snapshot.docs.map((doc) => doc.data()).toList();
+    });
   }
 
-  /// Add a new incident to Firestore
-  Future<DocumentReference<Incident>> addIncident(Incident incident) {
-    return _incidentsRef.add(incident);
-  }
-
-  /// Update an existing incident
-  Future<void> updateIncident(String id, Incident incident) {
-    return _incidentsRef.doc(id).update(incident.toFirestore());
-  }
-
-  /// Delete an incident
-  Future<void> deleteIncident(String id) {
-    return _incidentsRef.doc(id).delete();
+  Stream<Incident> getIncidentById(String id) {
+    return _incidentsRef.doc(id).snapshots().map((snapshot) => snapshot.data()!);
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import '../models/incident_model.dart';
+import '../models/incident.dart';
 import '../services/firestore_service.dart';
 
 class IncidentDetailsScreen extends StatelessWidget {
@@ -43,7 +43,7 @@ class IncidentDetailsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(incident.title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                Text(incident.address, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -58,16 +58,16 @@ class IncidentDetailsScreen extends StatelessWidget {
                     const Icon(Icons.location_on, size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(incident.location, style: Theme.of(context).textTheme.bodyMedium),
+                      child: Text('Lat: ${incident.latitude.toStringAsFixed(5)}, Lng: ${incident.longitude.toStringAsFixed(5)}', style: Theme.of(context).textTheme.bodyMedium),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                if (incident.imageUrl != null && incident.imageUrl!.isNotEmpty)
+                if (incident.imageUrl.isNotEmpty)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12.0),
                     child: Image.network(
-                      incident.imageUrl!,
+                      incident.imageUrl,
                       width: double.infinity,
                       height: 250,
                       fit: BoxFit.cover,
@@ -80,10 +80,6 @@ class IncidentDetailsScreen extends StatelessWidget {
                       },
                     ),
                   ),
-                const SizedBox(height: 20),
-                Text('Description', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text(incident.description, style: Theme.of(context).textTheme.bodyLarge),
               ],
             ),
           );

@@ -1,59 +1,62 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:incident_reporter/models/incident.dart';
+import 'package:incident_reporter/services/firestore_service.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import '../models/incident_model.dart';
-import '../services/firestore_service.dart';
-
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final firestoreService = Provider.of<FirestoreService>(context);
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
+  Stream<List<Incident>>? _incidentsStream;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    if (mounted) {
+      setState(() {
+        _incidentsStream = firestoreService.getIncidents();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Incident Reporter'),
       ),
       body: StreamBuilder<List<Incident>>(
-        stream: firestoreService.getIncidents(),
+        stream: _incidentsStream,
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          final incidents = snapshot.data ?? [];
-
-          if (incidents.isEmpty) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('No incidents reported yet.'));
           }
-
+          final incidents = snapshot.data!;
           return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
             itemCount: incidents.length,
             itemBuilder: (context, index) {
               final incident = incidents[index];
-              final timeAgo = timeago.format(incident.timestamp.toDate());
-
-              return Card(
-                elevation: 3,
-                margin: const EdgeInsets.symmetric(vertical: 8.0),
-                child: ListTile(
-                  leading: const Icon(Icons.report_problem, color: Colors.amber, size: 40),
-                  title: Text(incident.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Reported $timeAgo at ${incident.location}'),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    context.go('/incident/${incident.id}');
-                  },
-                ),
+              final reportedAt = timeago.format(incident.timestamp.toDate());
+              final truncatedAddress = incident.address.length > 10
+                  ? '${incident.address.substring(0, 10)}...'
+                  : incident.address;
+              return ListTile(
+                title: Text(truncatedAddress),
+                subtitle: Text('Reported $reportedAt'),
+                onTap: () => context.go('/details/${incident.id}'),
               );
             },
           );
@@ -61,8 +64,7 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.go('/capture'),
-        tooltip: 'Report a New Incident',
-        child: const Icon(Icons.add_a_photo),
+        child: const Icon(Icons.add),
       ),
     );
   }
