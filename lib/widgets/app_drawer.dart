@@ -25,19 +25,25 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.home),
+            title: const Text('Home'),
             onTap: () {
+              Navigator.pop(context);
               context.go('/');
             },
           ),
           ListTile(
             leading: const Icon(Icons.search),
+            title: const Text('Search Incidents'),
             onTap: () {
+              Navigator.pop(context);
               context.go('/search_incidents');
             },
           ),
           ListTile(
             leading: const Icon(Icons.near_me),
+            title: const Text('Nearby Incidents'),
             onTap: () {
+              Navigator.pop(context);
               context.go('/nearby_incidents');
             },
           ),
