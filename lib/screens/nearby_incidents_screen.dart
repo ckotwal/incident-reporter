@@ -6,13 +6,8 @@ class NearbyIncidentsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nearby Incidents'),
-      ),
-      body: const Center(
-        child: Text('Nearby Incidents Screen'),
-      ),
+    return const Center(
+      child: Text('Nearby Incidents Screen'),
     );
   }
 }

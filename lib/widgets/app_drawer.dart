@@ -13,7 +13,7 @@ class AppDrawer extends StatelessWidget {
         children: <Widget>[
           const DrawerHeader(
             decoration: BoxDecoration(
-              color: Colors.blue,
+              color: Colors.deepPurple,
             ),
             child: Text(
               'Menu',
@@ -24,15 +24,19 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
+            leading: const Icon(Icons.home),
+            onTap: () {
+              context.go('/');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.search),
-            title: const Text('Search Incidents'),
             onTap: () {
               context.go('/search_incidents');
             },
           ),
           ListTile(
             leading: const Icon(Icons.near_me),
-            title: const Text('Nearby Incidents'),
             onTap: () {
               context.go('/nearby_incidents');
             },

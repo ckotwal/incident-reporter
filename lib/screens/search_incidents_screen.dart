@@ -6,13 +6,8 @@ class SearchIncidentsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search Incidents'),
-      ),
-      body: const Center(
-        child: Text('Search Incidents Screen'),
-      ),
+    return const Center(
+      child: Text('Search Incidents Screen'),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:incident_reporter/widgets/app_drawer.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
@@ -34,11 +35,38 @@ void main() async {
   );
 }
 
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
 final _router = GoRouter(
+  navigatorKey: _rootNavigatorKey,
+  initialLocation: '/',
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const HomeScreen(),
+    ShellRoute(
+      navigatorKey: _shellNavigatorKey,
+      builder: (context, state, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Incident Reporter'),
+          ),
+          drawer: const AppDrawer(),
+          body: child,
+        );
+      },
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const HomeScreen(),
+        ),
+        GoRoute(
+          path: '/search_incidents',
+          builder: (context, state) => const SearchIncidentsScreen(),
+        ),
+        GoRoute(
+          path: '/nearby_incidents',
+          builder: (context, state) => const NearbyIncidentsScreen(),
+        ),
+      ],
     ),
     GoRoute(
       path: '/capture',
@@ -50,14 +78,6 @@ final _router = GoRouter(
         final incidentId = state.pathParameters['id']!;
         return IncidentDetailsScreen(incidentId: incidentId);
       },
-    ),
-    GoRoute(
-      path: '/search_incidents',
-      builder: (context, state) => const SearchIncidentsScreen(),
-    ),
-    GoRoute(
-      path: '/nearby_incidents',
-      builder: (context, state) => const NearbyIncidentsScreen(),
     ),
   ],
 );

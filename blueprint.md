@@ -22,6 +22,12 @@ This document outlines the project structure, features, and design of the Flutte
     *   "Nearby Incidents" uses the `Icons.near_me` icon.
 *   **Routing:** `go_router` is used for navigation.
 
+### Version 3: Icon-Only Global Navigation Drawer
+
+*   **Feature:** The side navigation drawer is now accessible from all main screens and uses only icons for navigation.
+*   **UI:** The text labels in the drawer have been removed, leaving only the `Icon` widgets.
+*   **Architecture:** Implemented a `ShellRoute` in `go_router` to provide a consistent `Scaffold` and `AppDrawer` for the home, search, and nearby incidents screens.
+
 ## Current Plan
 
-*   Implement the side navigation drawer as described above.
+*   Implement the icon-only global navigation drawer.
