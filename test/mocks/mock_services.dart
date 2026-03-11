@@ -1,6 +1,6 @@
-import 'package:myapp/services/firestore_service.dart';
-import 'package:myapp/services/location_service.dart';
-import 'package:myapp/services/storage_service.dart';
+import 'package:incident_reporter/services/firestore_service.dart';
+import 'package:incident_reporter/services/location_service.dart';
+import 'package:incident_reporter/services/storage_service.dart';
 import 'package:mockito/mockito.dart';
 
 class MockFirestoreService extends Mock implements FirestoreService {}

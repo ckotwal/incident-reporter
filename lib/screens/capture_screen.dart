@@ -31,7 +31,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
   Future<void> _initializeCamera() async {
     final cameras = await availableCameras();
     final firstCamera = cameras.first;
-    _cameraController = CameraController(firstCamera, ResolutionPreset.medium);
+    _cameraController = CameraController(
+      firstCamera,
+      ResolutionPreset.medium,
+      enableAudio: false,
+    );
     await _cameraController!.initialize();
     if (mounted) {
       setState(() {});
@@ -82,11 +86,23 @@ class _CaptureScreenState extends State<CaptureScreen> {
       await firestoreService.addIncident(newIncident);
 
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Incident reported successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
         context.go('/');
       }
     } catch (e) {
-      // Handle errors appropriately
-      print(e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to report incident: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
