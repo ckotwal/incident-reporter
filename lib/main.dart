@@ -10,6 +10,8 @@ import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/capture_screen.dart';
 import 'screens/incident_details_screen.dart';
+import 'screens/search_incidents_screen.dart';
+import 'screens/nearby_incidents_screen.dart';
 import 'services/firestore_service.dart';
 import 'services/location_service.dart';
 import 'services/storage_service.dart';
@@ -48,6 +50,14 @@ final _router = GoRouter(
         final incidentId = state.pathParameters['id']!;
         return IncidentDetailsScreen(incidentId: incidentId);
       },
+    ),
+    GoRoute(
+      path: '/search_incidents',
+      builder: (context, state) => const SearchIncidentsScreen(),
+    ),
+    GoRoute(
+      path: '/nearby_incidents',
+      builder: (context, state) => const NearbyIncidentsScreen(),
     ),
   ],
 );

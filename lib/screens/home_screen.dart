@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:incident_reporter/models/incident.dart';
 import 'package:incident_reporter/services/firestore_service.dart';
+import 'package:incident_reporter/widgets/app_drawer.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -32,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Incident Reporter'),
       ),
+      drawer: const AppDrawer(),
       body: StreamBuilder<List<Incident>>(
         stream: _incidentsStream,
         builder: (context, snapshot) {
