@@ -20,6 +20,7 @@ class CaptureScreen extends StatefulWidget {
 class _CaptureScreenState extends State<CaptureScreen> {
   CameraController? _cameraController;
   XFile? _imageFile;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -56,6 +57,10 @@ class _CaptureScreenState extends State<CaptureScreen> {
   Future<void> _submitIncident() async {
     if (_imageFile == null) return;
 
+    setState(() {
+      _isSubmitting = true;
+    });
+
     final locationService = Provider.of<LocationService>(context, listen: false);
     final storageService = Provider.of<StorageService>(context, listen: false);
     final firestoreService = Provider.of<FirestoreService>(context, listen: false);
@@ -71,7 +76,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
         longitude: position.longitude,
         address: address,
         imageUrl: imageUrl,
-        timestamp: Timestamp.fromDate(DateTime.now()), // Corrected this line
+        timestamp: Timestamp.fromDate(DateTime.now()),
       );
 
       await firestoreService.addIncident(newIncident);
@@ -82,6 +87,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
     } catch (e) {
       // Handle errors appropriately
       print(e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -125,12 +136,16 @@ class _CaptureScreenState extends State<CaptureScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               FloatingActionButton(
-                onPressed: () => setState(() => _imageFile = null),
+                onPressed: _isSubmitting ? null : () => setState(() => _imageFile = null),
                 child: const Icon(Icons.close),
               ),
               FloatingActionButton(
-                onPressed: _submitIncident,
-                child: const Icon(Icons.check),
+                onPressed: _isSubmitting ? null : _submitIncident,
+                child: _isSubmitting
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      )
+                    : const Icon(Icons.check),
               ),
             ],
           ),

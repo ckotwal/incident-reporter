@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:incident_reporter/widgets/location_map.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -80,6 +80,19 @@ class IncidentDetailsScreen extends StatelessWidget {
                       },
                     ),
                   ),
+                const SizedBox(height: 24),
+                Text(
+                  'Incident Location',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12.0),
+                  child: LocationMap(
+                    latitude: incident.latitude,
+                    longitude: incident.longitude,
+                  ),
+                ),
               ],
             ),
           );

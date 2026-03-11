@@ -50,6 +50,7 @@ dependencies:
   firebase_app_check: ^0.4.1+5
   camera: ^0.12.0
   camera_web: ^0.3.5+3
+  google_maps_flutter: ^2.14.2
 
 dev_dependencies:
   flutter_test:
