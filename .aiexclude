@@ -1,0 +1,15 @@
+# Exclude build and dependency artifacts (High token consumers)
+build/
+.dart_tool/
+.pub-cache/
+
+# Exclude large assets and documentation
+assets/images/
+assets/videos/
+doc/
+*.md
+
+# Exclude sensitive or generated files
+*.g.dart
+*.freezed.dart
+.env

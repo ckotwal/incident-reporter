@@ -17,6 +17,11 @@ import '../mocks/mock_services.dart';
 
 void main() {
   group('Home Screen Widget Tests', () {
+    late MockFirestoreService mockFirestoreService;
+    late MockLocationService mockLocationService;
+    late MockStorageService mockStorageService;
+    late StreamController<List<Incident>> incidentsController;
+
     final testIncident = Incident(
       id: '1',
       timestamp: Timestamp.now(),
@@ -26,11 +31,7 @@ void main() {
       imageUrl: 'http://fake-url.com/image.jpg',
     );
 
-    Widget createTestApp(
-      MockFirestoreService firestoreService,
-      MockLocationService locationService,
-      MockStorageService storageService,
-    ) {
+    Widget createTestApp() {
       final router = GoRouter(
         initialLocation: '/',
         routes: [
@@ -44,9 +45,9 @@ void main() {
 
       return MultiProvider(
         providers: [
-          Provider<FirestoreService>.value(value: firestoreService),
-          Provider<LocationService>.value(value: locationService),
-          Provider<StorageService>.value(value: storageService),
+          Provider<FirestoreService>.value(value: mockFirestoreService),
+          Provider<LocationService>.value(value: mockLocationService),
+          Provider<StorageService>.value(value: mockStorageService),
         ],
         child: MaterialApp.router(
           routerConfig: router,
@@ -54,57 +55,39 @@ void main() {
       );
     }
 
+    setUp(() {
+      mockFirestoreService = MockFirestoreService();
+      mockLocationService = MockLocationService();
+      mockStorageService = MockStorageService();
+      incidentsController = StreamController<List<Incident>>.broadcast();
+
+      when(mockFirestoreService.getIncidents())
+          .thenAnswer((_) => incidentsController.stream);
+    });
+
+    tearDown(() {
+      incidentsController.close();
+    });
+
     testWidgets('should display a list of incidents', (WidgetTester tester) async {
-      // Arrange
-      final mockFirestoreService = MockFirestoreService();
-      final mockLocationService = MockLocationService();
-      final mockStorageService = MockStorageService();
-      final incidentsController = StreamController<List<Incident>>.broadcast();
+      await tester.pumpWidget(createTestApp());
 
-      when(mockFirestoreService.getIncidents()).thenAnswer((_) => incidentsController.stream);
-
-      await tester.pumpWidget(createTestApp(
-        mockFirestoreService,
-        mockLocationService,
-        mockStorageService,
-      ));
-
-      // Act
       incidentsController.add([testIncident]);
       await tester.pumpAndSettle();
 
-      // Assert
       expect(find.text('123 Test St'), findsOneWidget);
-      
-      await incidentsController.close();
     });
 
     testWidgets('should navigate to capture screen when FAB is tapped', (WidgetTester tester) async {
-      // Arrange
-      final mockFirestoreService = MockFirestoreService();
-      final mockLocationService = MockLocationService();
-      final mockStorageService = MockStorageService();
-      final incidentsController = StreamController<List<Incident>>.broadcast();
-
-      when(mockFirestoreService.getIncidents()).thenAnswer((_) => incidentsController.stream);
-      
-      await tester.pumpWidget(createTestApp(
-        mockFirestoreService,
-        mockLocationService,
-        mockStorageService,
-      ));
+      await tester.pumpWidget(createTestApp());
       
       incidentsController.add([]);
       await tester.pumpAndSettle();
 
-      // Act
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
 
-      // Assert
       expect(find.byType(CaptureScreen), findsOneWidget);
-
-      await incidentsController.close();
     });
   });
 }

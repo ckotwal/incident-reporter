@@ -132,6 +132,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: FloatingActionButton(
+            heroTag: 'capture_fab',
             onPressed: _takePicture,
             child: const Icon(Icons.camera_alt),
           ),

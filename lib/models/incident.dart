@@ -28,4 +28,14 @@ class Incident {
       timestamp: data['timestamp'] ?? Timestamp.now(),
     );
   }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'imageUrl': imageUrl,
+      'latitude': latitude,
+      'longitude': longitude,
+      'address': address,
+      'timestamp': timestamp,
+    };
+  }
 }

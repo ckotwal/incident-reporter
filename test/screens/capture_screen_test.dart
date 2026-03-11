@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
+// This import is the critical fix for the compilation error.
+import 'package:camera_platform_interface/src/types/types.dart'; 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:incident_reporter/screens/capture_screen.dart';
@@ -9,11 +13,20 @@ import 'package:incident_reporter/services/firestore_service.dart';
 import 'package:incident_reporter/services/location_service.dart';
 import 'package:incident_reporter/services/storage_service.dart';
 import 'package:mockito/mockito.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:provider/provider.dart';
+
 import '../mocks/mock_services.dart';
 
-// 1. Mock the camera platform
-class MockCameraPlatform extends Mock implements CameraPlatform {
+class MockCameraPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements CameraPlatform {
+
+  @override
+  Future<int> createCameraWithSettings(CameraDescription cameraDescription, CameraSettings settings) {
+    return Future.value(1);
+  }
+
   @override
   Future<List<CameraDescription>> availableCameras() async {
     return [
@@ -26,28 +39,22 @@ class MockCameraPlatform extends Mock implements CameraPlatform {
   }
 
   @override
-  Future<int> createCamera(
-    CameraDescription cameraDescription,
-    ResolutionPreset? resolutionPreset, {
-    bool enableAudio = false,
-  }) async {
-    return 1; // Return a fake camera ID
-  }
-
-  @override
   Future<void> initializeCamera(
     int cameraId, {
     ImageFormatGroup imageFormatGroup = ImageFormatGroup.unknown,
-  }) async {
-    // Simulate camera initialization
-  }
+  }) async {}
 
   @override
   Stream<CameraInitializedEvent> onCameraInitialized(int cameraId) {
-    return Stream.value(const CameraInitializedEvent(1, 1920, 1080,
-        ExposureMode.auto, true, FocusMode.auto, true));
+    return Stream.value(const CameraInitializedEvent(
+        1, 1920, 1080, ExposureMode.auto, true, FocusMode.auto, true));
   }
-  
+
+  @override
+  Stream<DeviceOrientationChangedEvent> onDeviceOrientationChanged() {
+    return const Stream.empty();
+  }
+
   @override
   Stream<CameraClosingEvent> onCameraClosing(int cameraId) {
     return const Stream.empty();
@@ -55,7 +62,6 @@ class MockCameraPlatform extends Mock implements CameraPlatform {
 
   @override
   Widget buildPreview(int cameraId) {
-    // Return a simple widget as a placeholder for the camera preview
     return const SizedBox(
       width: 1920,
       height: 1080,
@@ -65,16 +71,28 @@ class MockCameraPlatform extends Mock implements CameraPlatform {
 
   @override
   Future<XFile> takePicture(int cameraId) async {
-    // Return an XFile with mock data
     return MockXFile();
   }
+
+  @override
+  Future<void> dispose(int cameraId) async {}
+
+  @override
+  Future<void> lockCaptureOrientation(int cameraId, DeviceOrientation orientation) async {}
+
+  @override
+  Future<void> setExposureMode(int cameraId, ExposureMode mode) async {}
+
+  @override
+  Future<void> setFocusMode(int cameraId, FocusMode mode) async {}
+
+  @override
+  Future<void> unlockCaptureOrientation(int cameraId) async {}
 }
 
-// 2. Mock XFile to prevent file system access
 class MockXFile extends Mock implements XFile {
   @override
   Future<Uint8List> readAsBytes() async {
-    // Return minimal valid image data (a 1x1 transparent PNG)
     return Uint8List.fromList([
       137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0,
       0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 10, 73, 68, 65, 84, 120,
@@ -118,27 +136,25 @@ void main() {
       );
     }
 
-    testWidgets('should show camera preview and allow taking a picture', (WidgetTester tester) async {
-      // Arrange
+    setUp(() {
       CameraPlatform.instance = MockCameraPlatform();
+    });
+
+    testWidgets('should show camera preview and allow taking a picture',
+        (WidgetTester tester) async {
       final mockFirestore = MockFirestoreService();
       final mockLocation = MockLocationService();
       final mockStorage = MockStorageService();
 
       await tester.pumpWidget(createTestApp(mockFirestore, mockLocation, mockStorage));
 
-      // Wait for camera to initialize by looking for the preview placeholder
       await tester.pumpAndSettle();
 
-      // Assert: Camera preview is showing
       expect(find.text('Camera Preview'), findsOneWidget);
 
-      // Act: Tap the capture button
       await tester.tap(find.byIcon(Icons.camera_alt));
       await tester.pumpAndSettle();
 
-      // Assert: After taking a picture, an Image widget is displayed
-      // and the retake and submit buttons are visible.
       expect(find.byType(Image), findsOneWidget);
       expect(find.byIcon(Icons.refresh), findsOneWidget);
       expect(find.byIcon(Icons.check), findsOneWidget);

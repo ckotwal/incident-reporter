@@ -60,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
           bottom: 16.0,
           right: 16.0,
           child: FloatingActionButton(
+            heroTag: 'home_fab',
             onPressed: () => context.go('/capture'),
             child: const Icon(Icons.add),
           ),

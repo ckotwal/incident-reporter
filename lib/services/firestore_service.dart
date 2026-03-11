@@ -2,27 +2,37 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:incident_reporter/models/incident.dart';
 
 class FirestoreService {
-  final FirebaseFirestore _firestore;
+  final CollectionReference<Incident> _incidentsRef = FirebaseFirestore.instance
+      .collection('incidents')
+      .withConverter<Incident>(
+        fromFirestore: (snapshot, _) => Incident.fromFirestore(snapshot),
+        toFirestore: (incident, _) => incident.toFirestore(),
+      );
 
-  FirestoreService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  Future<void> addIncident(Incident incident) {
+    return _incidentsRef.add(incident);
+  }
 
-  late final CollectionReference<Incident> _incidentsRef =
-      _firestore.collection('incidents').withConverter<Incident>(
-            fromFirestore: (snapshot, _) => Incident.fromFirestore(snapshot),
-            toFirestore: (incident, _) => {
-              'imageUrl': incident.imageUrl,
-              'latitude': incident.latitude,
-              'longitude': incident.longitude,
-              'address': incident.address,
-              'timestamp': incident.timestamp,
-            },
-          );
+  Stream<List<Incident>> getRecentIncidents() {
+    return _incidentsRef
+        .orderBy('timestamp', descending: true)
+        .limit(10)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => doc.data()).toList();
+    });
+  }
 
-  CollectionReference<Incident> get incidentsRef => _incidentsRef;
+  Future<List<Incident>> searchIncidentsByDateRange(DateTime from, DateTime to) {
+    // Ensure the 'to' date includes the entire day
+    final endOfDay = DateTime(to.year, to.month, to.day, 23, 59, 59);
 
-  Future<void> addIncident(Incident incident) async {
-    await _incidentsRef.add(incident);
+    return _incidentsRef
+        .where('timestamp', isGreaterThanOrEqualTo: from)
+        .where('timestamp', isLessThanOrEqualTo: endOfDay)
+        .orderBy('timestamp', descending: true)
+        .get()
+        .then((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
   Stream<List<Incident>> getIncidents() {
