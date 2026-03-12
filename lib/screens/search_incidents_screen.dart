@@ -1,3 +1,5 @@
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -107,11 +109,11 @@ class _SearchIncidentsScreenState extends State<SearchIncidentsScreen> {
     return _searchResults.map((incident) {
       return Marker(
         markerId: MarkerId(incident.id),
-        position: LatLng(incident.latitude, incident.longitude),
+        position: LatLng(incident.geopoint.latitude, incident.geopoint.longitude),
         infoWindow: InfoWindow(
           title: incident.address,
           snippet: 'Tap to view details',
-          onTap: () => context.push('/image-details', extra: incident),
+          onTap: () => GoRouter.of(context).push('/image-details', extra: incident),
         ),
       );
     }).toSet();
@@ -260,7 +262,7 @@ class _SearchIncidentsScreenState extends State<SearchIncidentsScreen> {
             rows: _searchResults.map((incident) {
               return DataRow(
                 onSelectChanged: (_) {
-                  context.push('/image-details', extra: incident);
+                  GoRouter.of(context).push('/image-details', extra: incident);
                 },
                 cells: [
                   DataCell(
@@ -275,17 +277,14 @@ class _SearchIncidentsScreenState extends State<SearchIncidentsScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
-                        child: Image.network(
-                          incident.imageUrl,
+                        child: CachedNetworkImage(
+                          imageUrl: incident.imageUrl,
                           height: imageHeight,
                           width: 120,
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, progress) =>
-                              progress == null
-                                  ? child
-                                  : const Center(
-                                      child: CircularProgressIndicator()),
-                          errorBuilder: (context, error, stackTrace) =>
+                          placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) =>
                               const Icon(Icons.error, color: Colors.red),
                         ),
                       ),

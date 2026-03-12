@@ -33,7 +33,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.search),
-            title: const Text('Search Incidents'),
+            title: const Text('Search'),
             onTap: () {
               Navigator.pop(context);
               context.go('/search_incidents');
@@ -41,7 +41,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.near_me),
-            title: const Text('Nearby Incidents'),
+            title: const Text('Nearby'),
             onTap: () {
               Navigator.pop(context);
               context.go('/nearby_incidents');

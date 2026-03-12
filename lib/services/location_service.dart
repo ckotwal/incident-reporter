@@ -9,11 +9,7 @@ class LocationService {
       throw Exception('Location permission not granted');
     }
 
-    const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-    );
-
-    return await Geolocator.getCurrentPosition(locationSettings: locationSettings);
+    return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
 
   Future<String> getAddressFromPosition(Position position) async {

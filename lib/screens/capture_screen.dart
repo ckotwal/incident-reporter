@@ -1,10 +1,10 @@
+
 import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:incident_reporter/models/incident.dart';
 import 'package:incident_reporter/services/firestore_service.dart';
 import 'package:incident_reporter/services/location_service.dart';
 import 'package:incident_reporter/services/storage_service.dart';
@@ -74,16 +74,14 @@ class _CaptureScreenState extends State<CaptureScreen> {
       final address = await locationService.getAddressFromPosition(position);
       final imageUrl = await storageService.uploadImage(_imageFile!);
 
-      final newIncident = Incident(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      await firestoreService.addIncident(
+        description: "description",
         latitude: position.latitude,
         longitude: position.longitude,
         address: address,
         imageUrl: imageUrl,
         timestamp: Timestamp.fromDate(DateTime.now()),
       );
-
-      await firestoreService.addIncident(newIncident);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

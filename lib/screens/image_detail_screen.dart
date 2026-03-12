@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:incident_reporter/models/incident.dart';
 
@@ -13,13 +14,12 @@ class ImageDetailScreen extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Center(
-          child: Image.network(
-            incident.imageUrl,
+          child: CachedNetworkImage(
+            imageUrl: incident.imageUrl,
             fit: BoxFit.cover,
-            loadingBuilder: (context, child, progress) => progress == null
-                ? child
-                : const Center(child: CircularProgressIndicator()),
-            errorBuilder: (context, error, stackTrace) =>
+            placeholder: (context, url) =>
+                const Center(child: CircularProgressIndicator()),
+            errorWidget: (context, url, error) =>
                 const Icon(Icons.error, color: Colors.red, size: 50),
           ),
         ),
