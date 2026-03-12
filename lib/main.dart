@@ -51,7 +51,7 @@ final _router = GoRouter(
       builder: (context, state, child) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Incident Reporter'),
+            title: const Text('wirerep'),
           ),
           drawer: const AppDrawer(),
           body: child,
@@ -135,7 +135,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp.router(
       routerConfig: _router,
-      title: 'Incident Reporter',
+      title: 'wirerep',
       theme: lightTheme,
     );
   }
