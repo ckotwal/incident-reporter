@@ -40,7 +40,7 @@ class _NearbyIncidentsScreenState extends State<NearbyIncidentsScreen> {
       center = _puneLocation;
     } else {
       try {
-        final position = await _locationService.getCurrentLocation();
+        final position = await _locationService.getCurrentPosition();
         center = LatLng(position.latitude, position.longitude);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -81,7 +81,7 @@ class _NearbyIncidentsScreenState extends State<NearbyIncidentsScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ImageDetailScreen(imageUrl: incident.imageUrl),
+              builder: (context) => ImageDetailScreen(incident: incident),
             ),
           );
         },

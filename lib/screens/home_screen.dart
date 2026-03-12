@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return ListTile(
                 title: Text(incident.address),
                 subtitle: Text('Reported $reportedAt'),
-                onTap: () => context.go('/details/${incident.id}'),
+                //onTap: () => context.go('/details/${incident.id}'),
               );
             },
           );
