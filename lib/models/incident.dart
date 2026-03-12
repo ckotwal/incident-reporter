@@ -31,4 +31,14 @@ class Incident {
       location: data['location'] ?? {},
     );
   }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'description': description,
+      'imageUrl': imageUrl,
+      'timestamp': timestamp,
+      'address': address,
+      'location': location,
+    };
+  }
 }
