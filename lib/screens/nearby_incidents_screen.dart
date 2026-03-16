@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,34 +18,60 @@ class _NearbyIncidentsScreenState extends State<NearbyIncidentsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final LocationService _locationService = LocationService();
 
-  late DateTime _fromDate;
-  late DateTime _toDate;
+  DateTime? _fromDate;
+  DateTime? _toDate;
   double _radius = 3.0;
-  bool _useMockLocation = true;
   List<Incident> _incidents = [];
   final LatLng _puneLocation = const LatLng(18.5207, 73.8554);
   GoogleMapController? _mapController;
 
+  final TextEditingController _fromController = TextEditingController();
+  final TextEditingController _toController = TextEditingController();
+
+  void _setFromDate(DateTime date) {
+    setState(() {
+      _fromDate = date;
+      _fromController.text = DateFormat.yMd().format(date);
+    });
+  }
+
+  void _setToDate(DateTime date) {
+    setState(() {
+      _toDate = date;
+      _toController.text = DateFormat.yMd().format(date);
+    });
+  }
+
+  @override
+  void dispose() {
+    _fromController.dispose();
+    _toController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
-    _toDate = DateTime.now();
-    _fromDate = _toDate.subtract(const Duration(days: 30));
+    _setToDate(DateTime.now());
+    _setFromDate(DateTime.now().subtract(const Duration(days: 30)));
   }
 
   Future<void> _searchIncidents() async {
-    LatLng center;
-    if (_useMockLocation) {
-      center = _puneLocation;
-    } else {
-      try {
-        final position = await _locationService.getCurrentPosition();
-        center = LatLng(position.latitude, position.longitude);
-      } catch (e) {
+    if (_fromDate == null || _toDate == null) return;
+
+    LatLng center = _puneLocation;
+    try {
+      final position = await _locationService.getCurrentPosition();
+      center = LatLng(position.latitude, position.longitude);
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not get current location: $e')),
+          SnackBar(
+            content: Text(
+                'Could not get current location: $e. Falling back to Pune.'),
+            duration: const Duration(seconds: 3),
+          ),
         );
-        return;
       }
     }
 
@@ -56,8 +81,8 @@ class _NearbyIncidentsScreenState extends State<NearbyIncidentsScreen> {
         .getNearbyIncidentsByDateRange(
       center: geoPointCenter,
       radiusInKm: _radius,
-      from: _fromDate,
-      to: _toDate,
+      from: _fromDate!,
+      to: _toDate!,
     )
         .listen((incidents) {
       setState(() {
@@ -90,20 +115,19 @@ class _NearbyIncidentsScreenState extends State<NearbyIncidentsScreen> {
   }
 
   Future<void> _selectDate(BuildContext context, bool isFromDate) async {
-    final DateTime? picked = await showDatePicker(
+    final now = DateTime.now();
+    final picked = await showDatePicker(
       context: context,
-      initialDate: isFromDate ? _fromDate : _toDate,
+      initialDate: (isFromDate ? _fromDate : _toDate) ?? now,
       firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      lastDate: now,
     );
-    if (picked != null && picked != (isFromDate ? _fromDate : _toDate)) {
-      setState(() {
-        if (isFromDate) {
-          _fromDate = picked;
-        } else {
-          _toDate = picked;
-        }
-      });
+    if (picked != null) {
+      if (isFromDate) {
+        _setFromDate(picked);
+      } else {
+        _setToDate(picked);
+      }
     }
   }
 
@@ -120,49 +144,61 @@ class _NearbyIncidentsScreenState extends State<NearbyIncidentsScreen> {
             child: Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    ElevatedButton(
-                      onPressed: () => _selectDate(context, true),
-                      child: Text('From: ${DateFormat.yMd().format(_fromDate)}'),
+                    Expanded(
+                      child: TextField(
+                        controller: _fromController,
+                        decoration: const InputDecoration(
+                          labelText: 'From',
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        readOnly: true,
+                        onTap: () => _selectDate(context, true),
+                      ),
                     ),
-                    ElevatedButton(
-                      onPressed: () => _selectDate(context, false),
-                      child: Text('To: ${DateFormat.yMd().format(_toDate)}'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _toController,
+                        decoration: const InputDecoration(
+                          labelText: 'To',
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        readOnly: true,
+                        onTap: () => _selectDate(context, false),
+                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Text('Radius (km):'),
-                    const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
-                        controller: TextEditingController(text: _radius.toString()),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        controller:
+                            TextEditingController(text: _radius.toString()),
+                        decoration: const InputDecoration(
+                          labelText: 'Radius (km)',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         onChanged: (value) {
                           _radius = double.tryParse(value) ?? _radius;
                         },
                       ),
                     ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _useMockLocation,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _useMockLocation = value ?? true;
-                        });
-                      },
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: _searchIncidents,
+                      style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12)),
+                      child: const Text('Search'),
                     ),
-                    const Text('Use Mock Location (Pune)'),
                   ],
-                ),
-                ElevatedButton(
-                  onPressed: _searchIncidents,
-                  child: const Text('Search'),
                 ),
               ],
             ),
